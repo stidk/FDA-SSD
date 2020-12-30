@@ -3,11 +3,17 @@
 该模型为FDA-SSD模型代码,采用的是PaddlePaddle1.8.0,python3.7.0.在ai studio平台上运行.voc数据集为ai studio平台公开的由笨笨用户上传的pascal-voc数据集,遥感数据集为ai studio平台公开的由AIStudio322801用户上传的遥感数据数据集.
 
 # 解压数据集
+
+## VOC数据集
 ```Shell
 !unzip -q /home/aistudio/data/data4379/pascalvoc.zip -d /home/aistudio/FDA-SSD/dataset/voc
 !python FDA-SSD/dataset/voc/create_list.py -d 'FDA-SSD/dataset/voc/pascalvoc'
 ```
 其中,data4379为上传数据集的编号,可能不一样,可以在data目录下查看.
+
+## 遥感数据集
+!unzip -q /home/aistudio/data/data63030/TGRS-HRRSD-Dataset-master.zip -d FDA-SSD/dataset
+其中,data63030为上传数据集的编号,可能不一样,可以在data目录下查看.
 
 # 运行
 ```Shell
