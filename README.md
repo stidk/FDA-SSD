@@ -12,7 +12,9 @@
 其中,data4379为上传数据集的编号,可能不一样,可以在data目录下查看.
 
 ## 遥感数据集
+```Shell
 !unzip -q /home/aistudio/data/data63030/TGRS-HRRSD-Dataset-master.zip -d FDA-SSD/dataset
+```
 其中,data63030为上传数据集的编号,可能不一样,可以在data目录下查看.
 
 # 运行
