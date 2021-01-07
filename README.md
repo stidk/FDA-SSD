@@ -22,5 +22,5 @@
 %cd ~/FDA-SSD
 !python tools/train.py -c ssd_r50_300_voc.yml --eval
 ```
-若要运行其它代码,可以将ssd_r50_300_voc.yml改成主界面有的所有yml文件,hrrsd结尾文件需更改ppdet/data/source/voc.py文件的104行中的pascalvoc_label改为pascalvoc_label1即可.
+若要运行其它代码,可以将ssd_r50_300_voc.yml改成主界面有的所有yml文件,up_ssd_r50_300_voc.yml提升准确率1%-1.5%,hrrsd结尾文件需更改ppdet/data/source/voc.py文件的104行中的pascalvoc_label改为pascalvoc_label1即可.
 图像大小为300的voc数据集平均每个模型训练时间为10小时左右,图像大小为512的voc数据集平均每个模型训练时间为24左右,hrrsd数据集的平均运行时间在30小时左右.
