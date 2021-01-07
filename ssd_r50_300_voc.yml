@@ -93,8 +93,8 @@ TrainReader:
     to_bgr: false
   - !NormalizeImage
     is_scale: false
-    mean: [114,108,100]
-    std: [70,69,72]
+    mean: [104, 117, 123]
+    std: [1, 1, 1]
   batch_size: 16
   shuffle: true
   worker_num: 8
@@ -123,8 +123,8 @@ EvalReader:
     to_bgr: false
   - !NormalizeImage
     is_scale: false
-    mean: [114,108,100]
-    std: [70,69,72]
+    mean: [104, 117, 123]
+    std: [1, 1, 1]
   batch_size: 32
   worker_num: 8
   bufsize: 16
@@ -150,6 +150,6 @@ TestReader:
     to_bgr: false
   - !NormalizeImage
     is_scale: false
-    mean: [114,108,100]
-    std: [70,69,72]
+    mean: [104, 117, 123]
+    std: [1, 1, 1]
   batch_size: 1
