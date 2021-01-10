@@ -74,6 +74,7 @@ class SSD(object):
         body_feats = self.backbone(im)
         body_feat_names11 = list(reversed(list(body_feats.keys())))
         body_feats11 = [body_feats[name] for name in body_feat_names11]
+        #先融合
         # print(body_feats11)
         # if isinstance(body_feats, OrderedDict):
         #     body_feat_names = list(body_feats.keys())
@@ -93,20 +94,24 @@ class SSD(object):
         #                         for idx, feat in enumerate(new_feats)])
         if self.fpn is not None:
             body_feats, spatial_scale = self.fpn.get_output(body_feats)
-
+        #后融合
         if isinstance(body_feats, OrderedDict):
             body_feat_names = list(reversed(list(body_feats.keys())))
             body_feats = [body_feats[name] for name in body_feat_names]
             new_feats = []
             new_feats = body_feats
             # print(body_feats)
+            #降采样
             new_feats_change = self.BasicConv(body_feats[0], 256, filter_size = 1, down_size = 38)
             new_feats_change2 = self.BasicConv(body_feats[1], 256, filter_size = 1)
             # print(new_feats_change, new_feats_change2)
+            #拼接
             new_feats[0] = fluid.layers.concat([new_feats_change, new_feats_change2], axis = 1)
             # print(3)
+            #删除原c3（38,38,512）
             del(new_feats[1])
             body_feats = new_feats
+            #融合(2,2,256)和(1,1,256)
             # new_feat_two = []
             # new_feat_two = body_feats
             # new_feats_change3 = self.BasicConv(body_feats[-2], 256, filter_size = 1, down_size = 1)
@@ -128,11 +133,14 @@ class SSD(object):
             # print(type(body_feat))
             name1 = 'se' + str(i)
             name2 = 'se_2' + str(i)
+            #SE
             body_feats1 += [self._squeeze_excitation(body_feat,num_of_layers[i],name = name1)]
+            #空间注意力
             body_feats2 += [self.spatialgate(body_feat,num_of_layers[i],name = name2)]
             # body_feats1 += [fluid.layers.elementwise_add(x = body_feat, y=s, act='relu', name=name1 + ".add.output.5")]
             i += 1
         for i in range(len(body_feats1)):
+            #并联连接
             body_feats3 += [body_feats1[i] + body_feats2[i]]
         if mixed_precision_enabled:
             body_feats = [fluid.layers.cast(v, 'float32') for v in body_feats]
