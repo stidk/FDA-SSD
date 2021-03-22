@@ -26,6 +26,7 @@ import glob
 import numpy as np
 import six
 from PIL import Image
+import cv2
 
 from paddle import fluid
 
@@ -87,6 +88,45 @@ def get_test_images(infer_dir, infer_img):
     return images
 
 
+def draw(results, save_path = 'new_featrues', img_num = 100):
+    """
+    可视化对应层结果
+    :param save_path: 图像保存时的文件路径以及文件名
+    :param results: 经卷积/池化层后的运算结果，格式为NCHW - 例： 128(batch size), 32(num_filters=16), 30(H), 15(W)
+    :param img_num: 采样数
+    """
+
+    def fix_value(ipt):
+        pix_max = np.max(ipt)
+        pix_min = np.min(ipt)
+        # base_value = np.abs(pix_min) + np.abs(pix_max)
+        # base_rate = 255 / base_value
+        # pix_left = base_rate * pix_min
+        # ipt = ipt * base_rate - pix_left
+        # ipt[ipt < 0] = 0.
+        # ipt[ipt > 255] = 1.
+        ipt = ((ipt - pix_min) / (pix_max - pix_min + 0.000001))*255
+        return ipt
+
+    im_list = None
+    for result_i, result in enumerate(results):
+        if result_i == img_num - 1:
+            break
+        result = np.sum(result, axis=0)
+        # result = np.sum(result, axis=0)
+        print(result.shape)
+        im = fix_value(result)
+        if im_list is None:
+            im_list = im
+        else:
+            im_list = np.append(im_list, im, axis=1)
+    im=im.astype(np.uint8)
+    heat_img = cv2.applyColorMap(im, 4)
+    im1 = Image.fromarray(np.array(heat_img).astype('uint8')).convert("RGB")
+    im = Image.fromarray(np.array(im_list).astype('uint8')).convert("RGB")
+    # im = im.resize((256, 256))
+    im1.save(save_path + ".jpg")
+    return np.array(im1)
 def main():
     cfg = load_config(FLAGS.config)
 
@@ -135,6 +175,17 @@ def main():
     if cfg['metric'] == 'VOC' or cfg['metric'] == 'WIDERFACE':
         extra_keys = ['im_id', 'im_shape']
     keys, values, _ = parse_fetches(test_fetches, infer_prog, extra_keys)
+    values.append('concat_0.tmp_0')
+    values.append('tmp_3')
+    values.append('res2c.add.output.5.tmp_1')
+    values.append('res3d.add.output.5.tmp_1')
+    values.append('fpn_7.tmp_2')
+    keys.append('no_se')
+    keys.append('is_se')
+    keys.append('after_backbone')
+    keys.append('no_se_1')
+    keys.append('is_se_1')
+    print(values,keys)
 
     # parse dataset category
     if cfg.metric == 'COCO':
@@ -177,6 +228,7 @@ def main():
             k: (np.array(v), v.recursive_sequence_lengths())
             for k, v in zip(keys, outs)
         }
+        print(np.array(outs[-1]).shape)
         logger.info('Infer iter {}'.format(iter_id))
         if 'TTFNet' in cfg.architecture:
             res['bbox'][1].append([len(res['bbox'][0])])
@@ -199,17 +251,45 @@ def main():
 
         # visualize result
         im_ids = res['im_id'][0]
+        # print(im_ids)
         for im_id in im_ids:
             image_path = imid2path[int(im_id)]
             image = Image.open(image_path).convert('RGB')
+            # image1 = Image.open()
 
             # use VisualDL to log original image
             if FLAGS.use_vdl:
                 original_image_np = np.array(image)
+                # print(np.array(res['no_se']).shape)
+                no_se = draw(np.array(outs[-5]),'new_featrues/no_se_{}'.format(vdl_image_frame), img_num = 10)
+                is_se =  draw(np.array(outs[-4]),'new_featrues/is_se_{}'.format(vdl_image_frame))
+                af_bb =  draw(np.array(outs[-3]),'new_featrues/af_bb_{}'.format(vdl_image_frame))
+                no_se_1 =  draw(np.array(outs[-2]),'new_featrues/no_se_1_{}'.format(vdl_image_frame))
+                is_se_1 =  draw(np.array(outs[-1]),'new_featrues/is_se_1_{}'.format(vdl_image_frame))
+                # print('no_se',no_se)
                 vdl_writer.add_image(
                     "original/frame_{}".format(vdl_image_frame),
                     original_image_np, vdl_image_step)
+                
+                vdl_writer.add_image(
+                    "no_se/frame_{}".format(vdl_image_frame),
+                    no_se, vdl_image_step)
 
+                vdl_writer.add_image(
+                    "is_se/frame_{}".format(vdl_image_frame),
+                    is_se, vdl_image_step)
+
+                vdl_writer.add_image(
+                    "af_backbone/frame_{}".format(vdl_image_frame),
+                    af_bb, vdl_image_step)
+
+                vdl_writer.add_image(
+                    "no_se_1/frame_{}".format(vdl_image_frame),
+                    no_se_1, vdl_image_step)                 
+
+                vdl_writer.add_image(
+                    "is_se_1/frame_{}".format(vdl_image_frame),
+                    is_se_1, vdl_image_step) 
             image = visualize_results(image,
                                       int(im_id), catid2name,
                                       FLAGS.draw_threshold, bbox_results,
